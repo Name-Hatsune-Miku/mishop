@@ -1,0 +1,101 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.login {
+    width: 100%;
+    height: 100vh;
+}
+
+.bak {
+    width: 100%;
+    height: 100vh;
+    background-image: url("../img/bg.png");
+    background-position: center top;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+.login-box {
+    width: 1050px;
+    height: 675px;
+    border-radius: 10px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.top-box {
+    width: 100%;
+    height: 75px;
+    background-color: transparent;
+}
+
+.bottom-box {
+    width: 100%;
+    height: 600px;
+    background-color: #fff;
+    display: flex;
+    junction-align: center;
+    align-items: center;
+    box-sizing: border-box;
+    box-shadow: 1px 1px 1px #dddfe0, -1px -1px 1px #dddfe0;
+    border-radius: 10px;
+}
+
+.imgtitle {
+    height: 120px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.left-box {
+    width: 50%;
+    height: 80%;
+    display: flex;
+    align-items: center;
+}
+
+.left-box img {
+    width: 90%;
+    height: 80%;
+    margin: auto;
+}
+
+.right-box {
+    width: 50%;
+    height: 80%;
+}
+
+.wechat {
+    width: 170px;
+    height: 170px;
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.wechat img {
+    width: 100%;
+}
+.logincontent{
+    width: 100%;
+    height: 360px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.demo-login-container{
+    width: 100%;
+    height: 320px;
+}
+.inside{
+    text-align: center;
+}
