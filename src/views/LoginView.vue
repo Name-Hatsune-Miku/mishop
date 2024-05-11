@@ -100,6 +100,7 @@ export default {
       };
       apiloginPostdata(loginData).then(res => {
         console.log(res)
+        this.$router.push('/about');
       })
     }
   }
