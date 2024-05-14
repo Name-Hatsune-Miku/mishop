@@ -3,26 +3,94 @@
     <div class="configtable">
       <div class="insideconfig">
         <div class="allset">
+          <div style="display: flex;align-items: center;width: 550px;justify-content: space-between">
+            <el-dropdown size="medium" split-button type="primary" @command="handleStatusSelect" @click="getconfiglist">
+              角色状态
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item command="1">启用中</el-dropdown-item>
+                <el-dropdown-item command="0">停用中</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+            <div>
+              <el-input placeholder="请输入系统角色名进行模糊查找" clearable v-model="getsearchroles" style="width: 400px">
+                <el-button slot="append" icon="el-icon-search" @click="searchroles"></el-button>
+              </el-input>
+            </div>
+          </div>
           <el-button type="primary" icon="el-icon-plus" @click="showAddDialog">添加系统角色</el-button>
           <el-dialog
               title="添加系统角色"
               :visible.sync="dialogVisible"
-              width="50%"
-              @close="resetForm">
-            <el-form ref="addRoleForm" :model="newRole" label-width="120px">
-              <el-form-item label="角色名称">
+              width="55%"
+              @close="resetForm"
+          >
+            <el-form ref="addRoleForm" :model="newRole" label-width="120px" :rules="rules">
+              <el-form-item label="角色名称" prop="rolename">
                 <el-input v-model="newRole.rolename"></el-input>
               </el-form-item>
               <el-form-item label="角色描述">
                 <el-input v-model="newRole.describe"></el-input>
               </el-form-item>
-              <!-- 更多表单项可根据实际需要添加 -->
+              <el-form-item label="角色权限" prop="powers">
+                <el-select v-model="newRole.powers" multiple placeholder="请选择权限" style="width: 100%;">
+                  <el-option
+                      v-for="permission in permissionsData"
+                      :key="permission.id"
+                      :label="permission.name"
+                      :value="permission.id"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="是否启用" prop="status">
+                <el-radio-group v-model="newRole.status">
+                  <el-radio :label="1">启用</el-radio>
+                  <el-radio :label="0">停用</el-radio>
+                </el-radio-group>
+              </el-form-item>
             </el-form>
             <span slot="footer" class="dialog-footer">
-                    <el-button @click="dialogVisible = false">取消</el-button>
-                     <el-button type="primary" @click="submitForm('addRoleForm')">确定</el-button>
-              </span>
+    <el-button @click="dialogVisible = false">取消</el-button>
+    <el-button type="primary" @click="submitForm('addRoleForm')">确定</el-button>
+  </span>
           </el-dialog>
+
+
+          <el-dialog
+              title="编辑系统角色"
+              :visible.sync="editdialogVisible"
+              width="55%"
+              @close="editresetForm"
+          >
+            <el-form ref="editRoleForm" :model="editRole" label-width="120px" :rules="rule">
+              <el-form-item label="角色名称" prop="rolename">
+                <el-input v-model="editRole.rolename"></el-input>
+              </el-form-item>
+              <el-form-item label="角色描述">
+                <el-input v-model="editRole.describe"></el-input>
+              </el-form-item>
+              <el-form-item label="角色权限" prop="powers">
+                <el-select v-model="editRole.powers" multiple placeholder="请选择权限" style="width: 100%;">
+                  <el-option
+                      v-for="permission in permissionsData"
+                      :key="permission.id"
+                      :label="permission.name"
+                      :value="permission.id"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="是否启用" prop="status">
+                <el-radio-group v-model="editRole.status">
+                  <el-radio :label="1">启用</el-radio>
+                  <el-radio :label="0">停用</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+    <el-button @click="editdialogVisible = false">取消</el-button>
+    <el-button type="primary" @click="editsubmitForm('editRoleForm')">确定</el-button>
+  </span>
+          </el-dialog>
+
         </div>
         <div class="playlist">
           <el-table
@@ -49,10 +117,16 @@
             <el-table-column
                 prop="powers"
                 label="角色权限配置"
-                width="240">
+                width="280">
               <template slot-scope="scope">
-                <div v-for="(powerId, index) in scope.row.powers.split(',')" :key="index" class="poweritems">
-                  {{ powerMapping[powerId] || '未知权限' }}{{ index < scope.row.powers.split(',').length - 1 ? ', ' : '' }}
+                <div class="power-container">
+                  <div v-for="(powerId, index) in scope.row.powers.split(',')" :key="index" class="power-item"
+                       v-show="index < maxDisplayedPowers">
+                    {{
+                      powerMapping[powerId] || '未知权限'
+                    }}{{ index < scope.row.powers.split(',').length - 1 && index < maxDisplayedPowers - 1 ? '、 ' : '' }}
+                  </div>
+                  <div v-if="scope.row.powers.split(',').length > maxDisplayedPowers" class="ellipsis">...</div>
                 </div>
               </template>
             </el-table-column>
@@ -66,17 +140,20 @@
               </template>
             </el-table-column>
             <el-table-column
-                prop="lasttime"
                 label="最后编辑时间"
                 sortable
                 width="240">
+              <template slot-scope="scope">
+                {{ formatTimestamp(scope.row.lasttime) }}
+              </template>
             </el-table-column>
             <el-table-column
                 fixed="right"
                 label="操作"
                 width="200">
               <template slot-scope="scope">
-                <el-button type="primary" icon="el-icon-edit" size="small" circle></el-button>
+                <el-button type="primary" icon="el-icon-edit" size="small" circle
+                           @click.native.prevent="handleClick(scope.row.id)"></el-button>
                 <el-button
                     type="danger"
                     icon="el-icon-delete"
@@ -105,6 +182,7 @@
                 layout="total, sizes, prev, pager, next, jumper"
                 :total="total"
                 :current-page="currentPage"
+                :pager-count="5"
                 :page-size="pageSize"
                 :page-sizes="[5, 10, 15, 20]"
                 @size-change="handleSizeChange"
@@ -118,11 +196,37 @@
 </template>
 
 <script>
-import {configlist, configset, stopconfigstatus, deleterole} from "../api/https";
+import {
+  configlist,
+  configset,
+  stopconfigstatus,
+  deleterole,
+  addroles,
+  getrolesbyid,
+  uproles,
+  getsearchroles
+} from "../api/https";
 
 export default {
   name: "ConfigPlay",
   methods: {
+    handleStatusSelect(status) {
+      this.statusFilter = status;
+      this.searchroles();
+    },
+    searchroles() {
+      let searchCriteria = {
+        rolename: this.getsearchroles,
+      };
+      if (this.statusFilter !== undefined) {
+        searchCriteria.status = this.statusFilter;
+      }
+      getsearchroles(searchCriteria).then(res => {
+        // console.log(res);
+        this.rolenamelist = res.data.data
+        this.total = res.data.pagecount;
+      });
+    },
     handleSizeChange(val) {
       this.pageSize = val;
       this.getconfiglist(val);
@@ -188,23 +292,77 @@ export default {
     resetForm() {
       this.$refs['addRoleForm'].resetFields();
     },
+    editresetForm() {
+      this.$refs['editRoleForm'].resetFields();
+    },
     // 提交表单
     submitForm(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          // 在这里处理提交逻辑，例如调用API保存新角色
+          // 将选中的权限ID拼接成逗号分隔的字符串
+          const powers = this.newRole.powers.join(',');
+          const addroleslist = {
+            rolename: this.newRole.rolename,
+            describe: this.newRole.describe,
+            powers: powers,
+            status: this.newRole.status,
+          }
+          addroles(addroleslist).then(res => {
+            console.log(res)
+            this.getconfiglist();
+          })
           console.log(this.newRole);
           this.$message.success('提交成功！');
           this.dialogVisible = false;
-          // 可以在这里调用getconfiglist()方法刷新列表
         } else {
           console.log('提交失败');
           return false;
         }
       });
     },
-    handleClick(row) {
-      console.log(row);
+    editsubmitForm(formName) {
+      this.$refs[formName].validate((valid) => {
+        if (valid) {
+          const powers = this.editRole.powers.join(',');
+          const editroleslist = {
+            id: this.editRole.id,
+            rolename: this.editRole.rolename,
+            describe: this.editRole.describe,
+            powers: powers,
+            status: this.editRole.status,
+          }
+          uproles(editroleslist).then(res => {
+            console.log(res)
+            this.getconfiglist();
+          })
+          console.log(this.newRole);
+          this.$message.success('更新成功！');
+          this.editdialogVisible = false;
+        } else {
+          console.log('更新失败');
+          return false;
+        }
+      });
+    },
+    handleClick(id) {
+      this.editdialogVisible = true;
+      // console.log(id);
+      getrolesbyid(id).then(res => {
+        // console.log(res);
+        this.editRole = res.data;
+        this.editRole.powers = res.data.powers.split(',').map(value => {
+          // 尝试解析为数字
+          const id = parseInt(value);
+          if (!isNaN(id)) {
+            // 如果是数字，则尝试在权限数据中找到对应的权限
+            const permission = this.permissionsData.find(permission => permission.id === id);
+            return permission ? id : null;
+          } else {
+            // 如果无法解析为数字，则不进行数据回显，返回 null
+            return null;
+          }
+        }).filter(id => id !== null); // 过滤掉 null 值，即未知权限
+      });
     },
     formatTimestamp(timestamp) {
       const date = new Date(timestamp);
@@ -222,11 +380,8 @@ export default {
         pagelimit: this.pageSize,
       }
       configlist(lists).then(res => {
-        console.log(res)
-        this.rolenamelist = res.data.data.map(item => ({
-          ...item,
-          lasttime: this.formatTimestamp(item.lasttime),
-        }));
+        // console.log(res)
+        this.rolenamelist = res.data.data
         this.total = res.data.pagecount;
       })
     },
@@ -242,7 +397,7 @@ export default {
       }).then(() => {
         deleterole(roleId).then(res => {
           console.log(res)
-          if (res.success) {
+          if (res.code === 2) {
             this.$message.success('删除成功！');
             this.getconfiglist();
           } else {
@@ -287,6 +442,8 @@ export default {
     // 获取权限配置数据
     const permissionsResponse = await configset();
     const permissionsData = permissionsResponse.data.data;
+    // console.log(permissionsData)
+    this.permissionsData = permissionsData;
     // 构建权限映射
     const powerMapping = {};
     permissionsData.forEach(permission => {
@@ -305,12 +462,34 @@ export default {
       newRole: { // 新角色表单数据模型
         rolename: '',
         describe: '',
-        // 其他表单项...
+        powers: '',
+        status: '',
       },
       highlightedRowIndex: null,
       currentPage: 1, // 当前页码
       pageSize: 10, // 每页显示的数量
       total: 0, // 总记录数
+      rules: {
+        rolename: [{required: true, message: '请输入角色名称', trigger: 'blur'}],
+        powers: [{required: true, message: '请输入角色权限', trigger: 'blur'}],
+        status: [{required: true, message: '请输入角色状态', trigger: 'blur'}],
+      },
+      permissionsData: [],
+      maxDisplayedPowers: 3,
+      editdialogVisible: false,
+      editRole: {
+        id: '',
+        rolename: '',
+        describe: '',
+        powers: '',
+        status: '',
+      },
+      rule: {
+        rolename: [{required: true, message: '请输入角色名称', trigger: 'blur'}],
+        powers: [{required: true, message: '请输入角色权限', trigger: 'blur'}],
+        status: [{required: true, message: '请输入角色状态', trigger: 'blur'}],
+      },
+      getsearchroles: '',
     }
   }
 }
@@ -347,7 +526,7 @@ export default {
   left: 0;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -379,11 +558,19 @@ export default {
   vertical-align: middle;
 }
 
-.poweritems {
+.power-container {
+  display: inline-block;
+}
+
+.power-item {
   display: inline-block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ellipsis {
+  display: inline-block;
 }
 
 .mangerpage {
@@ -395,5 +582,17 @@ export default {
   position: absolute;
   bottom: 30px;
   left: 0;
+}
+
+.el-dropdown {
+  vertical-align: top;
+}
+
+.el-dropdown + .el-dropdown {
+  margin-left: 15px;
+}
+
+.el-icon-arrow-down {
+  font-size: 12px;
 }
 </style>

@@ -3,7 +3,7 @@
     <el-row class="tac">
       <el-col :span="24">
         <el-menu
-            default-active="/about/teacher"
+            default-active="/about/configplay"
             class="el-menu-vertical-demo menuaside"
             @open="handleOpen"
             @close="handleClose"
@@ -24,7 +24,7 @@
             <span slot="title">企业管理</span>
           </el-menu-item>
           <el-menu-item index="/about/teacher">
-            <i class="el-icon-office-building"></i>
+            <i class="el-icon-s-order"></i>
             <span slot="title">讲师管理</span>
           </el-menu-item>
           <el-submenu index="2">

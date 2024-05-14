@@ -107,6 +107,14 @@ export function stopconfigstatus(data) {
     })
 }
 
+export function addroles(data) {
+    return new Promise((resolve) => {
+        apiregisterPost("index.php/index/role/addroles", data).then(res => {
+            resolve(res)
+        })
+    })
+}
+
 export function deleterole(id) {
     return new Promise((resolve) => {
         apidelete(`index.php/index/role/delroles?id=${id}`).then(res => {
@@ -150,6 +158,30 @@ export function deleteteacher(id) {
 export function upteacher(data) {
     return new Promise((resolve) => {
         apiregisterPost("index.php/index/index/upteacher", data).then(res => {
+            resolve(res)
+        })
+    })
+}
+
+export function getrolesbyid(id) {
+    return new Promise((resolve) => {
+        getstrCode("index.php/index/role/getrolesbyid?id=" + id).then(res => {
+            resolve(res)
+        })
+    })
+}
+
+export function uproles(data) {
+    return new Promise((resolve) => {
+        apiregisterPost("index.php/index/role/uproles", data).then(res => {
+            resolve(res)
+        })
+    })
+}
+
+export function getsearchroles(data) {
+    return new Promise((resolve) => {
+        apiregisterPost("index.php/index/role/getsearchroles", data).then(res => {
             resolve(res)
         })
     })
